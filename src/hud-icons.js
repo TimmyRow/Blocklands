@@ -1,0 +1,6 @@
+function icon(rows,palette){const c=document.createElement('canvas');c.width=9;c.height=9;const g=c.getContext('2d');rows.forEach((row,y)=>[...row].forEach((p,x)=>{if(palette[p]){g.fillStyle=palette[p];g.fillRect(x,y,1,1);}}));return c.toDataURL();}
+export const heart=icon(['.........','.bb.bbb..','brrbrrrb.','brlrrrrb.','brrrrrrb.','.brrrrb..','..brrb...','...bb....','.........'],{b:'#291d1b',r:'#ec443a',l:'#fa9381'});
+export const emptyHeart=icon(['.........','.bb.bbb..','brrbrrrb.','brlrrrrb.','brrrrrrb.','.brrrrb..','..brrb...','...bb....','.........'],{b:'#291d1b',r:'#40352f',l:'#574b40'});
+export const food=icon(['...bbb...','..brrrb..','.brlrrrb.','.brrrrrb.','..brrrb..','...bwb...','..bwwb...','.bwwb....','..bb.....'],{b:'#38251d',r:'#ba743e',l:'#deaa72',w:'#e0d6b7'});
+export const emptyFood=icon(['...bbb...','..brrrb..','.brlrrrb.','.brrrrrb.','..brrrb..','...bwb...','..bwwb...','.bwwb....','..bb.....'],{b:'#291d1b',r:'#49392b',l:'#5d4936',w:'#665c48'});
+export function meter(value,kind){const full=kind==='heart'?heart:food,empty=kind==='heart'?emptyHeart:emptyFood;return Array.from({length:10},(_,i)=>{const units=Math.max(0,Math.min(2,value-i*2));return `<span class="pixel-meter"><img src="${empty}" alt=""><img class="fill" style="clip-path:inset(0 ${units===2?0:units===1?50:100}% 0 0)" src="${full}" alt=""></span>`;}).join('');}

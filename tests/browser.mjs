@@ -1,0 +1,16 @@
+import {chromium} from '@playwright/test';
+import fs from 'node:fs';
+import {fileURLToPath} from 'node:url';
+const out=new URL('../test-results/',import.meta.url);fs.mkdirSync(out,{recursive:true});
+const browser=await chromium.launch({headless:true,args:['--enable-webgl']});
+const page=await browser.newPage({viewport:{width:1440,height:900}});const errors=[];page.on('pageerror',e=>errors.push(e.message));
+await page.goto('http://127.0.0.1:5187/?qa');await page.waitForFunction(()=>!!window.__game);await page.waitForTimeout(1200);await page.screenshot({path:fileURLToPath(new URL('title.png',out))});
+await page.click('#play');await page.waitForSelector('#pause:not(.hidden)');await page.click('#resume');await page.waitForTimeout(500);
+console.log('started',await page.evaluate(()=>({screen:__game.screen,locked:!!document.pointerLockElement,pos:{...__game.game.player},render:__game.view.renderer.info.render})));
+await page.screenshot({path:fileURLToPath(new URL('gameplay.png',out))});
+const before=await page.evaluate(()=>({...__game.game.player}));await page.keyboard.down('w');await page.waitForTimeout(800);await page.keyboard.up('w');const after=await page.evaluate(()=>({...__game.game.player}));console.log('movement',Math.hypot(before.x-after.x,before.z-after.z));
+await page.keyboard.press('e');await page.waitForSelector('#inventory:not(.hidden)');await page.screenshot({path:fileURLToPath(new URL('inventory.png',out))});console.log('inventory',await page.locator('#bag .slot').count(),await page.locator('#inv-hotbar .slot').count());
+await page.evaluate(()=>{__game.game.bag[1]={id:4,n:5};__game.openInventory();});await page.getByRole('button',{name:/Oak Planks/}).first().click();console.log('craft',await page.evaluate(()=>__game.game.bag.filter(Boolean)));
+await page.keyboard.press('e');await page.waitForTimeout(200);await page.keyboard.press('Escape');await page.waitForTimeout(200);
+console.log('pause',await page.evaluate(()=>__game.screen));console.log('errors',errors);
+await browser.close();if(errors.length)process.exitCode=1;

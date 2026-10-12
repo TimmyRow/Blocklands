@@ -1,0 +1,9 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {World,raycast,collides} from '../src/world.js';
+import {addItem,craft,recipes,B} from '../src/data.js';
+test('same seeds reproduce worlds and different seeds change terrain',()=>{const a=new World('Meadow').generate(),b=new World('Meadow').generate(),c=new World('Other').generate();assert.deepEqual(a.blocks,b.blocks);assert.notDeepEqual(a.blocks,c.blocks);const p=a.spawn();assert.equal(collides(a,p),false);assert.ok(a.get(Math.floor(p.x),Math.floor(p.y)-1,Math.floor(p.z)));});
+test('edits survive regeneration, including removing blocks',()=>{const w=new World().generate();w.set(5,30,5,0);w.set(6,31,6,B.PLANKS);const next=new World().generate();next.restore([...w.edits]);assert.equal(next.get(5,30,5),0);assert.equal(next.get(6,31,6),B.PLANKS);});
+test('ray traversal gives the correct adjacent placement face',()=>{const w=new World();w.set(3,4,5,B.STONE);const h=raycast(w,{x:3.5,y:4.5,z:9.5},{x:0,y:0,z:-1},5);assert.equal(h.id,B.STONE);assert.deepEqual(h.normal,{x:0,y:0,z:1});assert.equal(h.distance,3.5);assert.equal(raycast(w,{x:3.5,y:4.5,z:9.5},{x:0,y:0,z:-1},2),null);});
+test('crafting consumes exact ingredients and returns output; full bag is atomic',()=>{const bag=Array(36).fill(null);addItem(bag,4,2);assert.equal(craft(bag,recipes[0]),true);assert.deepEqual(bag[0],{id:4,n:1});assert.deepEqual(bag[1],{id:8,n:4});const full=Array.from({length:36},()=>({id:2,n:64}));full[0]={id:4,n:64};const before=structuredClone(full);assert.equal(craft(full,recipes[0]),false);assert.deepEqual(full,before);});
+test('stack limits, inventory overflow, and tool durability',()=>{const bag=Array(2).fill(null);assert.equal(addItem(bag,4,130),2);assert.equal(bag[0].n,64);assert.equal(bag[1].n,64);const tools=Array(2).fill(null);assert.equal(addItem(tools,40,2,23),0);assert.deepEqual(tools,[{id:40,n:1,dur:23},{id:40,n:1,dur:23}]);});
