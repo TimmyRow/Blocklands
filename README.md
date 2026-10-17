@@ -6,7 +6,9 @@ Run `npm install`, then `npm run dev`. Create a named world or choose any saved 
 
 ## Controls
 
-WASD move; mouse look; Space jump/swim/jump out of water; left Shift sneak; left Ctrl sprint; left mouse hold to mine/attack; right mouse place/use/eat (hold to repeat block placement); E inventory; 1–9 or wheel hotbar; Q drop; middle click pick block; Esc pause; F3 coordinates. In Creative, double-tap Space to fly, then Space/Shift to ascend/descend.
+WASD move; mouse look; Space jump/swim/jump out of water; left Shift sneak; hold Ctrl + W or double-tap and hold W to sprint; left mouse hold to mine/attack; right mouse place/use/eat (hold to repeat block placement); E inventory; 1–9 or wheel hotbar; Q drop; middle click pick block; Esc pause; F3 coordinates. In Creative, double-tap Space to fly, then Space/Shift to ascend/descend.
+
+Sprinting runs about 30% faster than walking. Release W or sneak to cancel a double-tap sprint. Survival requires more than three food icons and uses extra hunger; Creative ignores that hunger restriction. Water keeps its normal swimming speed. The HUD shows SPRINTING while active, and opening a menu clears sprint input.
 
 ## Water exits and bridging
 

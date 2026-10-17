@@ -1,0 +1,32 @@
+import {chromium} from '@playwright/test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+const browser=await chromium.launch({headless:true,args:['--enable-webgl']});
+const page=await browser.newPage({viewport:{width:1280,height:800}}),errors=[];
+page.on('pageerror',e=>errors.push(e.message));
+try{
+ await page.goto('http://127.0.0.1:5187/?qa');await page.waitForFunction(()=>window.__game);
+ await page.click('#play');await page.waitForSelector('#pause:not(.hidden)');await page.click('#resume');
+ await page.evaluate(()=>{const g=__game.game;g.mobs=[];g.time=240;for(let x=55;x<75;x++)for(let z=25;z<60;z++){for(let y=29;y<40;y++)g.world.set(x,y,z,0);g.world.set(x,29,z,1);}Object.assign(g.player,{x:64.5,y:30.005,z:54.5,yaw:0,pitch:0,vy:0,grounded:true});});
+ await page.keyboard.down('ControlLeft');await page.keyboard.down('KeyW');
+ await page.waitForFunction(()=>__game.game.sprinting&&document.getElementById('world-state').textContent.includes('SPRINTING'));
+ fs.mkdirSync('test-results',{recursive:true});await page.screenshot({path:'test-results/sprinting.png'});
+ await page.keyboard.up('ControlLeft');await page.waitForFunction(()=>!__game.game.sprinting);await page.keyboard.up('KeyW');
+ console.log('PASS Ctrl + W sprint and visible HUD feedback');
+ await page.waitForTimeout(350);await page.keyboard.press('KeyW');await page.keyboard.down('KeyW');
+ await page.waitForFunction(()=>__game.game.sprinting&&__game.game.sprintLatched);
+ await page.keyboard.down('ShiftLeft');await page.waitForFunction(()=>!__game.game.sprinting&&!__game.game.sprintLatched);
+ await page.keyboard.up('ShiftLeft');await page.keyboard.up('KeyW');
+ console.log('PASS double-tap W starts sprint and sneak cancels it');
+ await page.evaluate(()=>__game.game.hunger=6);await page.keyboard.down('ControlLeft');await page.keyboard.down('KeyW');
+ await page.waitForTimeout(300);assert.equal(await page.evaluate(()=>__game.game.sprinting),false);
+ await page.evaluate(()=>__game.game.hunger=20);await page.waitForFunction(()=>__game.game.sprinting);
+ await page.keyboard.up('ControlLeft');await page.keyboard.up('KeyW');
+ console.log('PASS low hunger prevents sprint and food restores it');
+ await page.waitForTimeout(350);await page.keyboard.press('KeyW');await page.keyboard.down('KeyW');await page.waitForFunction(()=>__game.game.sprinting);
+ await page.keyboard.press('e');await page.waitForSelector('#inventory:not(.hidden)');assert.equal(await page.evaluate(()=>__game.game.sprintLatched||__game.game.sprinting),false);
+ await page.keyboard.up('KeyW');await page.keyboard.press('e');await page.keyboard.down('KeyW');
+ await page.waitForTimeout(300);assert.equal(await page.evaluate(()=>__game.game.sprinting),false);await page.keyboard.up('KeyW');
+ console.log('PASS opening inventory resets sprint and double-tap timing');
+ assert.deepEqual(errors,[]);console.log('PASS no browser runtime errors');
+}finally{await browser.close();}
