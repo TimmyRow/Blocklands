@@ -6,7 +6,13 @@ Run `npm install`, then `npm run dev`. Create a named world or choose any saved 
 
 ## Controls
 
-WASD move; mouse look; Space jump/swim; left Shift sneak; left Ctrl sprint; left mouse hold to mine/attack; right mouse place/use/eat; E inventory; 1–9 or wheel hotbar; Q drop; middle click pick block; Esc pause; F3 coordinates. In Creative, double-tap Space to fly, then Space/Shift to ascend/descend.
+WASD move; mouse look; Space jump/swim/jump out of water; left Shift sneak; left Ctrl sprint; left mouse hold to mine/attack; right mouse place/use/eat (hold to repeat block placement); E inventory; 1–9 or wheel hotbar; Q drop; middle click pick block; Esc pause; F3 coordinates. In Creative, double-tap Space to fly, then Space/Shift to ascend/descend.
+
+## Water exits and bridging
+
+Hold Space to swim to the surface and jump out; move toward a bank to climb onto it. Surface jumps preserve their momentum instead of being cancelled by the swimming speed. Solid banks and low ceilings still block the player normally.
+
+For forward bridging, stand on a block and aim down just beyond its edge. A pale outline previews the adjacent empty cell at foot level. Right-click places there without requiring you to reach around to the side face. Hold right-click while walking forward to continue the bridge, or sneak with Shift for ledge protection. The usual inventory cost, collision checks, and Creative rules still apply.
 
 ## Multiple worlds — v2.1
 

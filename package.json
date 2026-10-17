@@ -7,7 +7,7 @@
     "dev": "vite --host 127.0.0.1 --port 5187",
     "build": "vite build",
     "test": "node --test tests/*.test.js",
-    "test:browser": "node tests/interactions.mjs && node tests/upgrade-browser.mjs && node tests/world-slots-browser.mjs"
+    "test:browser": "node tests/interactions.mjs && node tests/upgrade-browser.mjs && node tests/world-slots-browser.mjs && node tests/movement-building-browser.mjs"
   },
   "dependencies": {
     "three": "0.180.0"

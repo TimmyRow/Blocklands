@@ -24,3 +24,19 @@ export class World{
 // Exact voxel traversal: avoids thin-step tunnelling when targeting block edges.
 export function raycast(world,origin,dir,max=5){let x=Math.floor(origin.x),y=Math.floor(origin.y),z=Math.floor(origin.z);const sx=Math.sign(dir.x),sy=Math.sign(dir.y),sz=Math.sign(dir.z);const dx=Math.abs(1/dir.x),dy=Math.abs(1/dir.y),dz=Math.abs(1/dir.z);let tx=(dir.x>0?x+1-origin.x:origin.x-x)*dx,ty=(dir.y>0?y+1-origin.y:origin.y-y)*dy,tz=(dir.z>0?z+1-origin.z:origin.z-z)*dz;if(!sx)tx=Infinity;if(!sy)ty=Infinity;if(!sz)tz=Infinity;let normal={x:0,y:0,z:0},distance=0;for(let i=0;i<100&&distance<=max;i++){const id=world.get(x,y,z);if(id&&id!==B.WATER)return{x,y,z,id,normal,distance};if(tx<ty&&tx<tz){x+=sx;distance=tx;tx+=dx;normal={x:-sx,y:0,z:0};}else if(ty<tz){y+=sy;distance=ty;ty+=dy;normal={x:0,y:-sy,z:0};}else{z+=sz;distance=tz;tz+=dz;normal={x:0,y:0,z:-sz};}}return null;}
 export function collides(world,p,height=1.8){for(let x=Math.floor(p.x-.29);x<=Math.floor(p.x+.29);x++)for(let y=Math.floor(p.y+.001);y<=Math.floor(p.y+height-.001);y++)for(let z=Math.floor(p.z-.29);z<=Math.floor(p.z+.29);z++)if(solid(world.get(x,y,z)))return true;return false;}
+
+// Treat the empty cell just beyond a supported edge as a placement target.
+// The sight ray must cross that cell's top, before any real block it hits.
+export function bridgePlacement(world,p,dir,hit,max=5){
+ if(!p.grounded||dir.y>=-.12)return null;
+ const y=Math.floor(p.y-.05),top=y+1;
+ if(Math.abs(p.y-top)>.12)return null;
+ const eye=p.y+(p.sneak?1.42:1.62),distance=(top-eye)/dir.y;
+ if(distance<=0||distance>max||hit&&hit.distance<=distance+.001)return null;
+ const x=Math.floor(p.x+dir.x*distance),z=Math.floor(p.z+dir.z*distance);
+ if(!world.inside(x,y,z)||![B.AIR,B.WATER].includes(world.get(x,y,z)))return null;
+ for(let sx=Math.floor(p.x-.29);sx<=Math.floor(p.x+.29);sx++)for(let sz=Math.floor(p.z-.29);sz<=Math.floor(p.z+.29);sz++){
+  if(Math.abs(sx-x)+Math.abs(sz-z)===1&&solid(world.get(sx,y,sz)))return {x,y,z,distance,bridge:true};
+ }
+ return null;
+}
