@@ -10,6 +10,12 @@ WASD move; mouse look; Space jump/swim/jump out of water; left Shift sneak; hold
 
 Sprinting runs about 30% faster than walking. Release W or sneak to cancel a double-tap sprint. Survival requires more than three food icons and uses extra hunger; Creative ignores that hunger restriction. Water keeps its normal swimming speed. The HUD shows SPRINTING while active, and opening a menu clears sprint input.
 
+## Autosave and recipe discovery
+
+Each world saves automatically every 10 seconds during play and while the inventory is open, plus on pause and when leaving the tab. The HUD reports the last successful save or a storage failure. Items on the cursor and in the crafting grid are included; reloading returns them to your inventory, with any overflow dropped nearby. Saves remain local to this browser and device.
+
+Recipes unlock permanently in that world once you have collected every ingredient type they use, even if you do not yet have the full quantity. Craftable recipes appear first; other discovered recipes show Missing materials or Needs crafting table. Click a ready recipe to fill the grid, then take the output. Crafting new materials immediately unlocks the next recipes. Existing saves learn recipes from their current inventory; Creative keeps its complete item catalog.
+
 ## Water exits and bridging
 
 Hold Space to swim to the surface and jump out; move toward a bank to climb onto it. Surface jumps preserve their momentum instead of being cancelled by the swimming speed. Solid banks and low ceilings still block the player normally.
@@ -37,7 +43,7 @@ Each world has an independent save record; creating or importing a world never r
 
 Survival starts with three apples. Punch logs, open E, craft planks, sticks, and a table. Place the table and right-click it for tools and building recipes. Pickaxes unlock stone, coal, iron, and diamond. Place and use a furnace to smelt with fuel. Pigs provide food; sheep provide wool for beds. Chests store items. Beds set your respawn point and skip night. Zombies appear at night and burn in daylight. Sneaking prevents walking off ledges. Swimming, drowning, fall damage, hunger, regeneration, tool wear, death drops, and respawn are implemented.
 
-The seeded world measures 160 × 160 blocks and 64 blocks high, with trees, river, underground caves, ores, clouds, and a 20-minute day/night cycle. Creative provides an unlimited item catalog and flight. Local browser storage saves the active world in its own slot every 20 seconds and when leaving; creating a new world preserves every existing slot. Inventory and containers are saved with block edits, mobs, player stats, and position.
+The seeded world measures 160 × 160 blocks and 64 blocks high, with trees, river, underground caves, ores, clouds, and a 20-minute day/night cycle. Creative provides an unlimited item catalog and flight. Local browser storage saves the active world in its own slot every 10 seconds and when leaving; creating a new world preserves every existing slot. Inventory and containers are saved with block edits, mobs, player stats, and position.
 
 ## Scope
 

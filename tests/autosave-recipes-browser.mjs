@@ -1,0 +1,44 @@
+import {chromium} from '@playwright/test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+const browser=await chromium.launch({headless:true,args:['--enable-webgl']});
+const page=await browser.newPage({viewport:{width:1440,height:900}}),errors=[];
+page.on('pageerror',e=>errors.push(e.message));
+const recipe=name=>page.locator('#recipes').getByRole('button',{name,exact:true});
+try{
+ await page.goto('http://127.0.0.1:5187/?qa');await page.waitForFunction(()=>window.__game);
+ await page.click('#play');await page.waitForSelector('#pause:not(.hidden)');await page.click('#resume');
+ await page.evaluate(()=>{const g=__game.game;g.mobs=[];g.drop(4,2,g.player,undefined,0);});
+ await page.waitForFunction(()=>__game.game.knownItems.has(4));await page.keyboard.press('e');
+ assert.equal(await recipe('Oak Planks').count(),1);assert.equal(await recipe('Wooden Pickaxe').count(),0);
+ await recipe('Oak Planks').click();await page.click('#craft-output');
+ assert.equal(await recipe('Crafting Table').count(),1);assert.equal(await recipe('Crafting Table').isDisabled(),true);
+ await page.locator('#inv-hotbar .slot').nth(2).click();
+ assert.equal(await recipe('Crafting Table').isDisabled(),false);
+ await recipe('Stick').click();await page.click('#craft-output');
+ assert.equal(await recipe('Wooden Pickaxe').count(),1);assert.equal(await recipe('Wooden Pickaxe').isDisabled(),true);assert.match(await recipe('Wooden Pickaxe').textContent(),/Needs crafting table/);
+ console.log('PASS pickup and crafting instantly unlock the next recipes, including table-only recipes');
+ // Leave a stick stack on the cursor and put a remaining plank into the grid.
+ await page.evaluate(()=>{const inv=__game.inv,g=__game.game;const i=g.bag.findIndex(s=>s?.id===8);inv.grid[0]={id:8,n:1};if(--g.bag[i].n===0)g.bag[i]=null;inv.render();g.world.set(65,40,56,8);g.saveTimer=9.8;});
+ await page.waitForFunction(()=>__game.slots.read(__game.activeId).save.pendingItems?.length===2);
+ const stored=await page.evaluate(()=>__game.slots.read(__game.activeId).save);
+ assert.equal(stored.pendingItems.find(s=>s.id===30).n,4);assert.equal(stored.pendingItems.find(s=>s.id===8).n,1);
+ assert.equal(await page.evaluate(()=>__game.inv.cursor.n),4);
+ await page.waitForFunction(()=>document.getElementById('autosave-status').textContent.startsWith('Saved'));
+ fs.mkdirSync('test-results',{recursive:true});await page.screenshot({path:'test-results/recipe-unlocks.png'});
+ console.log('PASS inventory autosave includes cursor, grid, terrain edits, and a success indicator');
+ await page.reload();await page.waitForFunction(()=>window.__game);await page.click('#continue');await page.waitForSelector('#pause:not(.hidden)');
+ assert.equal(await page.evaluate(()=>__game.game.bag.reduce((n,s)=>n+(s?.id===30?s.n:0),0)),4);
+ assert.equal(await page.evaluate(()=>__game.game.bag.reduce((n,s)=>n+(s?.id===8?s.n:0),0)),2);
+ assert.equal(await page.evaluate(()=>__game.game.world.get(65,40,56)),8);
+ await page.click('#resume');await page.keyboard.press('e');assert.equal(await recipe('Wooden Pickaxe').count(),1);
+ console.log('PASS reload restores crafting items once and remembers unlocked recipes');
+ await page.evaluate(()=>{const g=__game.game;g.world.set(64,40,56,9);g.saveTimer=9.8;});
+ await page.keyboard.press('e');
+ await page.waitForFunction(()=>__game.slots.read(__game.activeId).save.edits.some(([index,id])=>id===9&&index===__game.game.world.index(64,40,56)));
+ await page.evaluate(()=>__game.game.bag[8]={id:38,n:3});await page.keyboard.press('Escape');await page.waitForSelector('#pause:not(.hidden)');
+ assert.equal(await page.evaluate(()=>__game.slots.read(__game.activeId).save.bag[8].n),3);
+ console.log('PASS active-play autosave and immediate save on pause');
+ await page.setViewportSize({width:800,height:600});await page.click('#resume');await page.keyboard.press('e');await page.screenshot({path:'test-results/recipe-unlocks-compact.png'});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+ assert.deepEqual(errors,[]);console.log('PASS compact inventory and no browser errors');
+}finally{await browser.close();}

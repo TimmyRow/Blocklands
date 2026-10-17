@@ -12,6 +12,8 @@ export function validateSave(s){
  if(!s||s.version!==1||![undefined,1,2].includes(s.generatorVersion)||typeof s.seed!=='string'||s.seed.length>100||!['creative','survival'].includes(s.mode)||!bag(s.bag,36)||!position(s.player)||!position(s.spawnPoint)||!['yaw','pitch','vy'].every(k=>finite(s.player[k]))||!finite(s.health)||s.health<0||s.health>20||!finite(s.hunger)||s.hunger<0||s.hunger>20||!finite(s.time)||s.time<0||s.time>=1200||!Number.isInteger(s.selected)||s.selected<0||s.selected>8||!finite(s.xp)||s.xp<0||!Number.isInteger(s.day)||s.day<1)fail();
  if(!Array.isArray(s.edits)||s.edits.length>SIZE*SIZE*HEIGHT||!s.edits.every(e=>Array.isArray(e)&&e.length===2&&Number.isInteger(e[0])&&e[0]>=0&&e[0]<SIZE*SIZE*HEIGHT&&(e[1]===0||items[e[1]]?.block)))fail();
  if(!record(s.chests)||!Object.entries(s.chests).every(([k,v])=>key(k)&&bag(v,27)))fail();
+ if(s.knownItems!==undefined&&(!Array.isArray(s.knownItems)||s.knownItems.length>Object.keys(items).length||!s.knownItems.every(id=>Number.isInteger(id)&&items[id])))fail();
+ if(s.pendingItems!==undefined&&(!Array.isArray(s.pendingItems)||s.pendingItems.length>10||!s.pendingItems.every(s=>s!==null&&stack(s))))fail();
  if(s.equipment&&(!bag(s.equipment,4)||s.equipment.some((v,i)=>v&&items[v.id].armor!==i)))fail();
  if(s.furnaces&&(!record(s.furnaces)||!Object.entries(s.furnaces).every(([k,f])=>key(k)&&bag(f.slots,3)&&['burn','burnTotal','progress'].every(n=>finite(f[n])&&f[n]>=0&&f[n]<=1000))))fail();
  if(s.crops&&(!record(s.crops)||!Object.entries(s.crops).every(([k,c])=>key(k)&&finite(c.age)&&c.age>=0)))fail();
