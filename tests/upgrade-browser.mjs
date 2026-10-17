@@ -1,0 +1,34 @@
+import {chromium} from '@playwright/test';
+import assert from 'node:assert/strict';
+import {fileURLToPath} from 'node:url';
+import fs from 'node:fs';
+const out=new URL('../test-results/',import.meta.url);fs.mkdirSync(out,{recursive:true});
+const browser=await chromium.launch({headless:true,args:['--enable-webgl']});
+const page=await browser.newPage({viewport:{width:1440,height:900}}),errors=[];
+page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
+const shot=name=>page.screenshot({path:fileURLToPath(new URL(name+'.png',out))});
+try{
+ await page.goto('http://127.0.0.1:5187/?qa');await page.waitForFunction(()=>window.__game);await page.click('#play');await page.waitForSelector('#pause:not(.hidden)');await page.click('#resume');
+ await page.evaluate(()=>{const g=__game.game;g.bag=Array(36).fill(null);g.bag[0]={id:4,n:4};__game.openInventory();});
+ await page.locator('#inv-hotbar .slot').nth(0).click();await page.locator('#craft-grid .slot').nth(3).click({button:'right'});await page.locator('#inv-hotbar .slot').nth(0).click();await page.click('#craft-output');await page.locator('#inv-hotbar .slot').nth(1).click();
+ assert.deepEqual(await page.evaluate(()=>__game.game.bag.slice(0,2)),[{id:4,n:3},{id:8,n:4}]);console.log('PASS manual 2x2 crafting consumes placed ingredient and returns planks');
+ await page.evaluate(()=>{const g=__game.game;g.bag[2]={id:8,n:12};g.bag[3]={id:30,n:8};g.bag[4]={id:34,n:16};g.world.set(64,30,51,12);__game.openInventory({id:12,x:64,y:30,z:51});});
+ await page.fill('#recipe-search','Wooden Pickaxe');await page.locator('#recipes .recipe').click();assert.equal(await page.locator('#craft-grid .slot').count(),9);await shot('v2-workbench');await page.click('#craft-output');await page.locator('#inv-hotbar .slot').nth(5).click();assert.equal(await page.evaluate(()=>__game.game.bag[5].id),40);console.log('PASS searchable recipe book fills 3x3 grid and crafts tools');
+ await page.fill('#recipe-search','Iron Chestplate');await page.locator('#recipes .recipe').click();await page.click('#craft-output');await page.locator('#armor-slots .slot').nth(1).click();assert.equal(await page.evaluate(()=>__game.game.equipment[1].id),60);console.log('PASS crafted armor equips into matching armor slot');
+ await page.evaluate(()=>{const g=__game.game;g.world.set(65,30,51,16);g.bag[6]={id:33,n:2};g.bag[7]={id:32,n:1};__game.openInventory({id:16,x:65,y:30,z:51});});
+ await page.locator('#inv-hotbar .slot').nth(6).click({modifiers:['Shift']});await page.locator('#inv-hotbar .slot').nth(7).click({modifiers:['Shift']});
+ await page.waitForFunction(()=>__game.game.world.furnaces['65,30,51'].progress>2);await shot('v2-furnace');
+ await page.waitForFunction(()=>__game.game.world.furnaces['65,30,51'].slots[2]?.n>=1,null,{timeout:60000});await page.locator('#furnace-output .slot').click();await page.locator('#inv-hotbar .slot').nth(6).click();assert.equal(await page.evaluate(()=>__game.game.bag[6].id),34);console.log('PASS furnace accepts input/fuel, smelts over time, and output is collectible');
+ await page.keyboard.press('Escape');await page.keyboard.press('Escape');await page.waitForSelector('#pause:not(.hidden)');
+ const downloadPromise=page.waitForEvent('download');await page.click('#export-world');const download=await downloadPromise;const backup=fileURLToPath(new URL('world-backup.json',out));await download.saveAs(backup);const saved=JSON.parse(fs.readFileSync(backup,'utf8'));assert.equal(saved.equipment[1].id,60);assert.equal(saved.generatorVersion,2);console.log('PASS downloaded backup contains armor, furnace, and terrain version');
+ await page.click('#save-quit');await page.setInputFiles('#world-file',backup);await page.waitForSelector('#pause:not(.hidden)');assert.equal(await page.evaluate(()=>__game.game.equipment[1].id),60);assert.ok(await page.evaluate(()=>__game.game.world.furnaces['65,30,51'].burn>0));console.log('PASS backup import restores new systems');
+ await page.click('#save-quit');await page.fill('#seed','Fresh Meadow');await page.click('#play');await page.waitForSelector('#pause:not(.hidden)');assert.equal(await page.evaluate(()=>__game.game.world.seedName),'Fresh Meadow');await page.click('#save-quit');await page.click('#restore-world');await page.waitForSelector('#pause:not(.hidden)');assert.equal(await page.evaluate(()=>__game.game.equipment[1].id),60);assert.equal(await page.evaluate(()=>__game.game.world.seedName),saved.seed);console.log('PASS creating a world keeps the previous world recoverable');
+ await page.click('#resume');
+ await page.evaluate(()=>{const g=__game.game;g.mobs=[];g.time=260;for(let x=56;x<76;x++)for(let z=48;z<67;z++){for(let y=23;y<42;y++)g.world.set(x,y,z,0);g.world.set(x,23,z,1);}for(let x=60;x<70;x++)for(let z=51;z<57;z++){g.world.set(x,23,z,z===54?7:22);if(z!==54){g.world.set(x,24,z,x%3===0?23:24);g.world.crops[[x,24,z].join(',')]={age:x%3===0?45:120};}}g.world.set(70,24,53,12);g.world.set(71,24,53,16);g.world.set(72,24,53,17);g.world.set(59,24,51,19);g.world.set(70,24,56,19);Object.assign(g.player,{x:66.5,y:24.02,z:63.5,yaw:.12,pitch:-.23,vy:0});g.bag[0]={id:53,n:1,dur:59};__game.select(0);});
+ await page.waitForFunction(()=>__game.game.world.dirty.size===0);await page.waitForTimeout(200);await shot('v2-farm');
+ await page.evaluate(()=>{const g=__game.game;g.time=800;g.mobs.push({uid:9001,kind:'creeper',x:63.5,y:24,z:59,hp:20,yaw:Math.PI,turn:999,attack:0,moving:false,vy:0});__game.setScreen('pause');document.exitPointerLock?.();});
+ await page.evaluate(()=>{document.getElementById('pause').classList.add('hidden');});await shot('v2-creeper');
+ await page.evaluate(()=>{const g=__game.game;g.mode='creative';__game.openInventory();});await page.fill('#recipe-search','Diamond');assert.equal(await page.locator('#recipes .recipe').count(),5);await page.setViewportSize({width:800,height:600});await shot('v2-compact');assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);console.log('PASS creative search and compact layout');
+ await page.setViewportSize({width:1440,height:900});await page.click('#inv-close');await page.evaluate(()=>{const g=__game.game;g.time=260;const x=130.5,z=75.5,y=g.world.ground(x,z);Object.assign(g.player,{x,y:y+6,z,yaw:-1.3,pitch:-.3,vy:0});g.flying=true;g.bag[0]={id:28,n:64};__game.select(0);});await page.waitForTimeout(300);await shot('v2-desert');
+ assert.deepEqual(errors,[]);console.log('PASS no runtime or WebGL errors');
+}finally{await browser.close();}
